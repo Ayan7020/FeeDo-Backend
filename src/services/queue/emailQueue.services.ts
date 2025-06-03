@@ -1,0 +1,4 @@
+
+class EmailQueueService {
+    // async 
+}
