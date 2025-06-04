@@ -12,5 +12,7 @@ export const envSchema = z.object({
     REDISPASS: z.string(),
     RABBITMQUSER: z.string(),
     RABBITMQPASSWORD: z.string(),
+    RABBITMQHOST: z.string(),
+    RABBITMQPORT: z.number(),
     JWT_SECRET: z.string().nonempty("JWT_SECRET is required for authentication")
 })

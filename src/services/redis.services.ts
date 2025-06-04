@@ -2,65 +2,81 @@ import RedisClient from "@/lib/Redis";
 import Redis from "ioredis";
 
 class Service {
-    private cacheClient: RedisClient;
-    private Client: Redis;
+  private static instance: Service;
+  private RedisCacheClient!: RedisClient;
+  private Client!: Redis;
 
-    constructor() {
-        this.cacheClient = new RedisClient();
-        this.Client = this.cacheClient.getClient();
+  private constructor() {
+    this.RedisCacheClient = new RedisClient();
+    this.Client = this.RedisCacheClient.getClient();
+  }
+ 
+  public static getInstance(): Service {
+    if (!Service.instance) {
+      Service.instance = new Service();
     }
+    return Service.instance;
+  }
 
-    public async createHash(key: string | number, object: Record<string, any>, prefix: string, expiryinMin?: number): Promise<boolean | undefined> {
-        try {
-            if (!key || typeof object !== 'object' || Object.keys(object).length === 0) {
-                console.warn("[Redis][createHash] Invalid key or object");
-                return false;
-            }
+  public async createHash(
+    key: string | number,
+    object: Record<string, any>,
+    prefix: string,
+    expiryinMin?: number
+  ): Promise<boolean | undefined> {
+    try {
+      if (!key || typeof object !== "object" || Object.keys(object).length === 0) {
+        console.warn("[Redis][createHash] Invalid key or object");
+        return false;
+      }
 
-            const KEY = `${prefix}:${key}`;
-            const pipeline = this.Client.pipeline();
+      if (!prefix || typeof prefix !== "string") {
+        console.warn("[Redis][createHash] Invalid Prefix");
+        return false;
+      }
 
-            pipeline.hmset(KEY, object);
+      const KEY = `${prefix}:${key}`;
+      const pipeline = this.Client.pipeline();
 
-            if (expiryinMin) {
-                const expiryInSeconds = expiryinMin * 60;
-                pipeline.expire(KEY, expiryInSeconds);
-            }
+      pipeline.hmset(KEY, object);
 
-            await pipeline.exec();
-            return true;
+      if (expiryinMin) {
+        const expiryInSeconds = expiryinMin * 60;
+        pipeline.expire(KEY, expiryInSeconds);
+      }
 
-        } catch (error: unknown) {
-            if (error instanceof Error) {
-                console.error("[Redis][createHash]:", error.message);
-            }
-            else {
-                console.error("[Redis][createHash] Unknown error : ", error);
-            }
-            throw new Error(String(error))
-        }
+      await pipeline.exec();
+      return true;
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error("[Redis][createHash]:", error.message);
+      } else {
+        console.error("[Redis][createHash] Unknown error:", error);
+      }
+      throw new Error(String(error));
     }
+  }
 
-    public async getHash() {
-        try {
+  public async getHash(
+    key: string | number,
+    prefix: string
+  ): Promise<Record<string, string> | null> {
+    try {
+      if (!key || !prefix) return null;
 
-        } catch (error: unknown) {
-            if (error instanceof Error) {
-                console.error("[Redis][gethash]:", error.message);
-            }
-            else {
-                console.error("[Redis][gethash] Unknown error : ", error);
-            }
-            throw new Error(String(error))
-        }
+      const KEY = `${prefix}:${key}`;
+      const result = await this.Client.hgetall(KEY);
+
+      return Object.keys(result).length > 0 ? result : null;
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error("[Redis][getHash]:", error.message);
+      } else {
+        console.error("[Redis][getHash] Unknown error:", error);
+      }
+      throw new Error(String(error));
     }
+  }
 }
 
-let redisService: Service;
-
-export function getRedisService() {
-    if (!redisService) {
-        redisService = new Service();
-    }
-    return redisService;
-}
+export const RedisCacheSingletonService = Service.getInstance();

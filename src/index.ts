@@ -4,8 +4,7 @@ import helmet from "helmet";
 import { ParseEnvData } from "@/utils/Env";
 import { AuthRoute } from "./api/auth";
 import { connectToDatabase, prisma } from "./lib/Database";
-import { HandleGlobalError } from "./utils/Error";
-import RedisClient from "./lib/Redis";
+import { HandleGlobalError } from "./utils/Error"; 
 
 const app = express();
 
@@ -22,12 +21,7 @@ app.use("/auth", AuthRoute);
 app.use(HandleGlobalError)
 
 const server = app.listen(ParseEnvData.NodePort, async () => {
-  await connectToDatabase();
-  const redisClient = new RedisClient();
-  if (!redisClient.getClient()) {
-    console.log("[Redis] connection failed!!!")
-    process.exit(1)
-  } 
+  await connectToDatabase(); 
   console.log(`Server is running at port ${ParseEnvData.NodePort}`);
 });
 

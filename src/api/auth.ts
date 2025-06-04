@@ -2,7 +2,7 @@ import { RequestValidator } from "@/controllers/request";
 import { prisma } from "@/lib/Database";
 import { SignupSchema, TypedSignupSchema } from "@/schemas/auth.schema";
 import { AuthServices } from "@/services/auth.services";
-import { getRedisService } from "@/services/redis.services";
+import { RedisCacheSingletonService } from "@/services/redis.services";
 import { asyncHandler } from "@/utils/asyncHandler";
 import { Request, Response, Router } from "express";
 
@@ -22,14 +22,13 @@ router.post("/register", RequestValidator.bodyValidator(SignupSchema), asyncHand
             }
         })
 
-        const OTP = AuthServices.generateOTP();
-        const RedisService = getRedisService();
+        const OTP = AuthServices.generateOTP(); 
         const redisOBJ = {
             email: user.email,
             otp: OTP
         };
 
-        const isOtpCacheSet = RedisService.createHash(user.id, redisOBJ, "OTP", 300,);
+        const isOtpCacheSet = RedisCacheSingletonService.createHash(user.id, redisOBJ, "OTP", 5);
 
         if (!isOtpCacheSet) {
             RequestValidator.handleError(res, {
