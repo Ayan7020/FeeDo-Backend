@@ -2,6 +2,7 @@ import { RequestValidator } from "@/controllers/request";
 import { prisma } from "@/lib/Database";
 import { SignupSchema, TypedSignupSchema } from "@/schemas/auth.schema";
 import { AuthServices } from "@/services/auth.services";
+import { EmailQueueService } from "@/services/queue/emailQueue.services";
 import { RedisCacheSingletonService } from "@/services/redis.services";
 import { asyncHandler } from "@/utils/asyncHandler";
 import { Request, Response, Router } from "express";
@@ -22,7 +23,7 @@ router.post("/register", RequestValidator.bodyValidator(SignupSchema), asyncHand
             }
         })
 
-        const OTP = AuthServices.generateOTP(); 
+        const OTP = AuthServices.generateOTP();
         const redisOBJ = {
             email: user.email,
             otp: OTP
@@ -38,18 +39,26 @@ router.post("/register", RequestValidator.bodyValidator(SignupSchema), asyncHand
             })
         }
 
-        return res.status(200).json({
+        res.status(200).json({
             status: "success",
             message: "user created successfully"
         })
 
+        const payload = {
+            user_firstname: body.name,
+            otp: OTP,
+            email: body.email
+        }
+
+        await EmailQueueService.sendMailToQueue(payload);
     } catch (error) {
         throw error;
     }
 }))
 
+// router.post("/verify-account", asyncHandler(async (req: Request, res: Response) => {
+// }))
 // router.post("/google-register");
-// router.post("/verify-account")
 // router.post("/login")
 // router.post("/google-login")
 // router.post("/forgot-password/request-otp")

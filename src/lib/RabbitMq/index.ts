@@ -1,12 +1,7 @@
 import { ParseEnvData } from "@/utils/Env";
 import { sleep } from "@/utils/time";
-import amqp from "amqplib";
+import amqp, { ConsumeMessage } from "amqplib";
 
-
-interface ConsumeQueue {
-    queueName: "",
-    onMessage: (msg: amqp.ConsumeMessage | null) => any,
-}
 
 export class RabbitMQ {
 
@@ -17,8 +12,8 @@ export class RabbitMQ {
     public reconnectMaxRetries: number = 10;
 
     constructor(params: Partial<{ queue: string, reconnectDelay: number, reconnectMaxRetries: number }> | null | undefined = {}) {
-        const allparams = { ...params }
-        if (allparams.queue?.trim()) {
+        const allparams = { ...params }  
+        if (!allparams.queue?.trim()) { 
             throw new Error("Queue name must be present", { cause: "queue-name" });
         }
         this.queue = allparams.queue?.trim() || "unknown-queue";
@@ -31,7 +26,7 @@ export class RabbitMQ {
 
             this.queueConnection = await amqp.connect({
                 username: ParseEnvData.RABBITMQUSER,
-                port: ParseEnvData.RABBITMQPORT,
+                port: Number(ParseEnvData.RABBITMQPORT),
                 hostname: ParseEnvData.RABBITMQHOST,
                 password: ParseEnvData.RABBITMQPASSWORD
             });
@@ -129,8 +124,9 @@ export class RabbitMQ {
             return false;
         }
     }
-    async consumeQueue(
-        consumeQueue: ConsumeQueue,
+
+    async consumeQueues(
+        consumeQueue: (msg: ConsumeMessage) => Promise<boolean>,
         consumeOptions: amqp.Options.Consume | null = {}
     ) {
         try {
@@ -146,8 +142,9 @@ export class RabbitMQ {
                     if (!msg) return;
 
                     try {
-                        await consumeQueue.onMessage(msg);
-                        this.channel.ack(msg);
+                        const success = await consumeQueue(msg);
+                        success && this.channel.ack(msg);
+                        !success && this.channel.nack(msg, false, false);
                     } catch (err) {
                         console.error("Error processing message:", err);
                         this.channel.nack(msg, false, false);
