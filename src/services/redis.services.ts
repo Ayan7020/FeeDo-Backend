@@ -7,10 +7,10 @@ class Service {
   private Client!: Redis;
 
   private constructor() {
-    this.RedisCacheClient = new RedisClient();
-    this.Client = this.RedisCacheClient.getClient();
+    this.RedisCacheClient = new RedisClient(); // initialized the client
+    this.Client = this.RedisCacheClient.getClient(); // Get the client
   }
- 
+
   public static getInstance(): Service {
     if (!Service.instance) {
       Service.instance = new Service();
@@ -57,26 +57,42 @@ class Service {
     }
   }
 
-  public async getHash(
+  public async getHash<T extends Record<string, any>>(
     key: string | number,
     prefix: string
-  ): Promise<Record<string, string> | null> {
+  ): Promise<T | null> {
     try {
       if (!key || !prefix) return null;
 
       const KEY = `${prefix}:${key}`;
       const result = await this.Client.hgetall(KEY);
 
-      return Object.keys(result).length > 0 ? result : null;
+      return Object.keys(result).length > 0 ? (result as T) : null;
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        console.error("[Redis][getHash]:", error.message);
-      } else {
-        console.error("[Redis][getHash] Unknown error:", error);
-      }
-      throw new Error(String(error));
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("[Redis][getHash]:", message);
+      throw new Error(message);
     }
   }
+
+  public async deleteKey(
+    key: string | number,
+    prefix: string
+  ): Promise<boolean> {
+    try {
+      if (!key || !prefix) return false;
+
+      const KEY = `${prefix}:${key}`;
+      const deletedCount = await this.Client.del(KEY);
+
+      return deletedCount > 0;
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("[Redis][getHash]:", message);
+      throw new Error(message);
+    }
+  }
+
 }
 
 export const RedisCacheSingletonService = Service.getInstance();

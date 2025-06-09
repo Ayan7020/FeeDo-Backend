@@ -6,7 +6,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -20,11 +19,11 @@ enum accountType {
 }
 
 model User {
-  id           Int         @id @default(autoincrement())
-  name         String
-  username     String      @unique
-  email        String      @unique
-  password     String?
-  accountType  accountType @default(Credential)
-  verification Boolean     @default(false)
+  id          Int         @id @default(autoincrement())
+  name        String
+  username    String      @unique
+  email       String      @unique
+  password    String?
+  accountType accountType @default(Credential)
+  isverified    Boolean     @default(false)
 }

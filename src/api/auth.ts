@@ -56,8 +56,65 @@ router.post("/register", RequestValidator.bodyValidator(SignupSchema), asyncHand
     }
 }))
 
-// router.post("/verify-account", asyncHandler(async (req: Request, res: Response) => {
-// }))
+router.post("/verify-account/:email/:otp", asyncHandler(async (req: Request, res: Response) => {
+    try {
+        const { email, otp } = req.params;
+
+        if (!email || !otp) {
+            return RequestValidator.handleError(res, {
+                status: 400,
+                message: "Email and OTP are required in URL params.",
+            });
+        }
+
+        const isUser = await AuthServices.findUserByEmail(email);
+        if (!isUser) {
+            return RequestValidator.handleError(res, {
+                status: 404,
+                message: "User does not exist in the database.",
+            });
+        }
+
+        const userRedis = await RedisCacheSingletonService.getHash<{ email: string; otp: string }>(
+            isUser.id,
+            "OTP"
+        );
+
+        if (!userRedis?.email || !userRedis?.otp) {
+            return RequestValidator.handleError(res, {
+                status: 400,
+                errorType: "Expired",
+                message: "OTP has expired or was never generated.",
+            });
+        }
+
+        const emailMatch = userRedis.email === email;
+        const otpMatch = userRedis.otp === otp;
+
+        if (!emailMatch || !otpMatch) {
+            return RequestValidator.handleError(res, {
+                status: 401,
+                errorType: "Invalid",
+                message: "Invalid OTP or email. Verification failed.",
+            });
+        }
+
+        await AuthServices.markUserAsVerified(isUser.id);
+
+        await RedisCacheSingletonService.deleteKey(isUser.id, "OTP");
+
+
+        return res.status(200).json({
+            success: true,
+            message: "Account verified successfully.",
+        });
+
+    } catch (error: any) {
+        throw (error)
+    }
+})
+);
+
 // router.post("/google-register");
 // router.post("/login")
 // router.post("/google-login")

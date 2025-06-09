@@ -1,10 +1,9 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { ParseEnvData } from '@/utils/Env';
-import { PrismaClient, User } from '@prisma/client';
+import { ParseEnvData } from '@/utils/Env'; 
+import { User } from '@prisma/client';
+import { prisma } from "@/lib/Database";
 import otpGenerator from 'otp-generator';
-
-const prisma = new PrismaClient();
 
 export class AuthServices {
 
@@ -30,5 +29,17 @@ export class AuthServices {
             lowerCaseAlphabets: false,
             digits: true,
         });
+    }
+
+    static async markUserAsVerified(userId: number): Promise<void> {
+        try {
+            await prisma.user.update({
+                where: { id: userId },
+                data: { isverified: true },
+            });
+        } catch (error) {
+            console.error("[AuthService][markUserAsVerified]:", error);
+            throw new Error("Failed to mark user as verified.");
+        }
     }
 }
