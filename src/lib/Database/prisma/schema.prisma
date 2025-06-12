@@ -19,11 +19,28 @@ enum accountType {
 }
 
 model User {
-  id          Int         @id @default(autoincrement())
+  id            Int            @id @default(autoincrement())
+  name          String
+  username      String         @unique
+  email         String         @unique
+  password      String?
+  accountType   accountType    @default(Credential)
+  refreshTokens RefreshToken[]
+  isverified    Boolean        @default(false)
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  tokenHash String
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  revoked   Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+} 
+
+model Workspace {
+  id          Int    @id @default(autoincrement())
   name        String
-  username    String      @unique
-  email       String      @unique
-  password    String?
-  accountType accountType @default(Credential)
-  isverified    Boolean     @default(false)
+  description String
 }

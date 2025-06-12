@@ -43,6 +43,7 @@
     "otp-generator": "^4.0.1",
     "pg": "^8.16.0",
     "redis": "^5.1.1",
+    "uuid": "^11.1.0",
     "zod": "^3.25.28"
   },
   "devDependencies": {

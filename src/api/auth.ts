@@ -1,6 +1,6 @@
 import { RequestValidator } from "@/controllers/request";
 import { prisma } from "@/lib/Database";
-import { SignupSchema, TypedSignupSchema } from "@/schemas/auth.schema";
+import { loginSchema, SignupSchema, TypedLoginSchema, TypedSignupSchema } from "@/schemas/auth.schema";
 import { AuthServices } from "@/services/auth.services";
 import { EmailQueueService } from "@/services/queue/emailQueue.services";
 import { RedisCacheSingletonService } from "@/services/redis.services";
@@ -115,8 +115,53 @@ router.post("/verify-account/:email/:otp", asyncHandler(async (req: Request, res
 })
 );
 
+router.post("/login", RequestValidator.bodyValidator(loginSchema), asyncHandler(async (req: Request, res: Response) => {
+    try {
+        const body: TypedLoginSchema = req.body;
+        const isUser = await AuthServices.findUserByEmail(body.email)
+        if (!isUser) {
+            return RequestValidator.handleNotFound(res, {
+                message: "User does not exists"
+            })
+        }
+
+        if (isUser.accountType === "Google") {
+            return RequestValidator.handleError(res, {
+                status: 403,
+                errorType: "invalid-login-method",
+                message: "This account is linked with Google. Please sign in using Google OAuth.",
+            });
+        }
+
+        const passwordMatches = AuthServices.verifyPassword(body.password, isUser?.password)
+        if (!passwordMatches) {
+            return RequestValidator.handleError(res, {
+                message: "Password incorrect",
+                errorType: "incorrect-password",
+            })
+        }
+
+        const { accessToken, refreshToken } = await AuthServices.GenerateToken(body.email);
+        await prisma.refreshToken.create({
+            data: {
+                tokenHash: await AuthServices.EncryptPassword(refreshToken),
+                userId: isUser.id,
+                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            }
+        });
+        RequestValidator.setAuthCookies(res, refreshToken)
+        return res.status(200).json({
+            success: true,
+            message: "login successfull",
+            accessToken: accessToken
+        })
+    } catch (error: any) {
+        throw error(error)
+    }
+}))
+// router.post("/resend-otp");
+// router.post("/regenerate-refreshToken")
 // router.post("/google-register");
-// router.post("/login")
 // router.post("/google-login")
 // router.post("/forgot-password/request-otp")
 // router.post("/forgot-password/verify-otp")

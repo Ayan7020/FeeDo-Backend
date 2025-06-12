@@ -1,9 +1,11 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { ParseEnvData } from '@/utils/Env'; 
+import { ParseEnvData } from '@/utils/Env';
 import { User } from '@prisma/client';
 import { prisma } from "@/lib/Database";
 import otpGenerator from 'otp-generator';
+import { v4 as uuidv4 } from 'uuid';
+import { generateAccessToken, generateRefreshToken } from '@/utils/jwt';
 
 export class AuthServices {
 
@@ -12,7 +14,7 @@ export class AuthServices {
         return bcrypt.hash(password, salt);
     }
 
-    static async verifyPassword(plainPassword: string, hashedPassword: string): Promise<boolean> {
+    static async verifyPassword(plainPassword: string, hashedPassword: any): Promise<boolean> {
         return bcrypt.compare(plainPassword, hashedPassword);
     }
 
@@ -40,6 +42,26 @@ export class AuthServices {
         } catch (error) {
             console.error("[AuthService][markUserAsVerified]:", error);
             throw new Error("Failed to mark user as verified.");
+        }
+    }
+
+    static async GenerateToken(email: string): Promise<{ accessToken: string; refreshToken: string }> {
+        try {
+            const user = await prisma.user.findUnique({ where: { email } });
+
+            if (!user) {
+                throw new Error("User not found");
+            }
+
+            const tokenID = uuidv4();
+            const accessToken = generateAccessToken(String(user.id));
+            const refreshToken = generateRefreshToken(String(user.id), tokenID);
+
+            
+            return { accessToken, refreshToken };
+        } catch (error: unknown) {
+            console.error("[AuthService][GenerateToken]: ", error instanceof Error ? error.message : 'Unknown error');
+            throw error;  
         }
     }
 }

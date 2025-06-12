@@ -1,13 +1,31 @@
-import { ZodError, ZodObject } from "zod" 
+import { ZodError, ZodObject } from "zod"
 import { Request, NextFunction, Response } from "express";
+import { ParseEnvData } from "@/utils/Env";
 
 
 type DynamicObject = { [k: string]: any };
 type Data = any;
 
 export class RequestValidator {
+    static setAuthCookies = (res: Response,refreshToken: string) => {
+        res.cookie("refreshToken",refreshToken,{
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+            
+        })
+    }
 
     static Options = {
+        handleNotFound: {
+            success: false,
+            message: "Not found",
+            data: null,
+            status: 404,
+            errorType: undefined,
+            appendData: {} as DynamicObject,
+        },
+
         handleErrorOptions: {
             success: false,
             message: "Error occurred",
@@ -18,6 +36,20 @@ export class RequestValidator {
         },
     }
 
+    static handleNotFound = (res: Response, options?: Partial<typeof this.Options.handleNotFound>) => {
+        const allOptions = {
+            ...this.Options.handleNotFound,
+            ...options,
+        };
+        res.status(allOptions.status).send({
+            success: allOptions.success,
+            message: allOptions.message,
+            errorType: allOptions.errorType,
+            data: allOptions.data,
+            ...allOptions.appendData,
+        });
+        return;
+    };
     static handleError = (res: Response, options?: Partial<typeof this.Options.handleErrorOptions>) => {
         const allOptions = {
             ...this.Options.handleErrorOptions,
