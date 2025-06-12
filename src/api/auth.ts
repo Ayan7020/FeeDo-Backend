@@ -133,7 +133,7 @@ router.post("/login", RequestValidator.bodyValidator(loginSchema), asyncHandler(
             });
         }
 
-        const passwordMatches = AuthServices.verifyPassword(body.password, isUser?.password)
+        const passwordMatches = await AuthServices.verifyPassword(body.password, isUser?.password) 
         if (!passwordMatches) {
             return RequestValidator.handleError(res, {
                 message: "Password incorrect",

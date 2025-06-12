@@ -35,13 +35,12 @@ export class RequestValidator {
 
     static handleSuccess = (res: Response, options?: Partial<typeof this.Options.handleSuccess>) => {
         const allOptions = {
-            ...this.Options.handleNotFound,
+            ...this.Options.handleSuccess,
             ...options,
         };
         res.status(allOptions.status).send({
             success: allOptions.success,
-            message: allOptions.message,
-            errorType: allOptions.errorType,
+            message: allOptions.message, 
             data: allOptions.data,
             ...allOptions.appendData,
         });

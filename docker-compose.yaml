@@ -44,7 +44,7 @@ services:
       - redisdb
 
   rabbitMQ:
-    image: rabbitmq:latest
+    image: rabbitmq:management
     container_name: rabbitmq-container
     restart: unless-stopped
     ports:

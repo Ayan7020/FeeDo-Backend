@@ -16,9 +16,7 @@ class Service {
     private static instance: Service;
     private rabbitMQ!: RabbitMQ;
     private isInitialized = false;
-    private readonly queueName = "mail-sending-queue";
-    private static readonly smtpServer = "smtp.mailersend.net";
-    private static readonly smtpPort = 587;
+    private readonly queueName = "mail-sending-queue"; 
 
     private constructor() {
         this.rabbitMQ = new RabbitMQ({ queue: this.queueName || "mail-sending-queue" });
