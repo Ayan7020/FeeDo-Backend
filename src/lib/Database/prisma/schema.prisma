@@ -13,20 +13,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum accountType {
-  Credential
-  Google
-}
-
 model User {
-  id            Int            @id @default(autoincrement())
-  name          String
-  username      String         @unique
-  email         String         @unique
-  password      String?
-  accountType   accountType    @default(Credential)
-  refreshTokens RefreshToken[]
-  isverified    Boolean        @default(false)
+  id                 Int              @id @default(autoincrement())
+  name               String
+  username           String           @unique
+  email              String           @unique
+  password           String?
+  accountType        accountType      @default(Credential)
+  isverified         Boolean          @default(false)
+  hasBusinessProfile Boolean          @default(false)
+  CreatedAt          DateTime         @default(now())
+  refreshTokens      RefreshToken[]
+  businessProfile    BusinessProfile? @relation()
 }
 
 model RefreshToken {
@@ -37,10 +35,50 @@ model RefreshToken {
   revoked   Boolean  @default(false)
   expiresAt DateTime
   createdAt DateTime @default(now())
-} 
+}
 
-model Workspace {
-  id          Int    @id @default(autoincrement())
-  name        String
-  description String
+model BusinessProfile {
+  id     Int  @id @default(autoincrement())
+  userId Int  @unique
+  user   User @relation(fields: [userId], references: [id])
+
+  businessName     String
+  businessType     BusinessType
+  customerType     CustomerType
+  feedbackChannels FeedbackChannel[]
+  targetRegions    String[]
+  Description      String
+  analysisGoals    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum accountType {
+  Credential
+  Google
+}
+
+enum BusinessType {
+  SaaS
+  Ecommerce
+  Healthcare
+  EdTech
+  FinTech
+  Other
+}
+
+enum CustomerType {
+  B2B
+  B2C
+  Hybrid
+}
+
+enum FeedbackChannel {
+  Email
+  Chat
+  SupportTicket
+  Survey
+  AppReview
+  SocialMedia
 }
