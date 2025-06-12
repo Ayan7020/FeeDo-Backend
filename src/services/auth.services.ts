@@ -4,6 +4,7 @@ import { ParseEnvData } from '@/utils/Env';
 import { User } from '@prisma/client';
 import { prisma } from "@/lib/Database";
 import otpGenerator from 'otp-generator';
+import { Request, NextFunction, Response } from "express";
 import { v4 as uuidv4 } from 'uuid';
 import { generateAccessToken, generateRefreshToken } from '@/utils/jwt';
 
@@ -63,5 +64,13 @@ export class AuthServices {
             console.error("[AuthService][GenerateToken]: ", error instanceof Error ? error.message : 'Unknown error');
             throw error;  
         }
+    }
+
+    static setAuthCookies = (res: Response, refreshToken: string) => {
+        res.cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+        })
     }
 }

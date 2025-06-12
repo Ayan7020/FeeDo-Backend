@@ -149,11 +149,15 @@ router.post("/login", RequestValidator.bodyValidator(loginSchema), asyncHandler(
                 expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
             }
         });
-        RequestValidator.setAuthCookies(res, refreshToken)
-        return res.status(200).json({
-            success: true,
-            message: "login successfull",
-            accessToken: accessToken
+        AuthServices.setAuthCookies(res, refreshToken)
+        return RequestValidator.handleSuccess(res, {
+            message: "login Successfull",
+            appendData: {
+                accessToken: accessToken,
+                email: isUser.email,
+                username: isUser.username,
+                name: isUser.name
+            }
         })
     } catch (error: any) {
         throw error(error)

@@ -1,22 +1,19 @@
 import { ZodError, ZodObject } from "zod"
-import { Request, NextFunction, Response } from "express";
-import { ParseEnvData } from "@/utils/Env";
+import { Request, NextFunction, Response } from "express"; 
 
 
 type DynamicObject = { [k: string]: any };
 type Data = any;
 
 export class RequestValidator {
-    static setAuthCookies = (res: Response,refreshToken: string) => {
-        res.cookie("refreshToken",refreshToken,{
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
-            
-        })
-    }
-
     static Options = {
+        handleSuccess: {
+            success: true,
+            message: "The Request is succcessfully Done",
+            data: null,
+            status: 200,
+            appendData: {} as DynamicObject
+        },
         handleNotFound: {
             success: false,
             message: "Not found",
@@ -36,6 +33,20 @@ export class RequestValidator {
         },
     }
 
+    static handleSuccess = (res: Response, options?: Partial<typeof this.Options.handleSuccess>) => {
+        const allOptions = {
+            ...this.Options.handleNotFound,
+            ...options,
+        };
+        res.status(allOptions.status).send({
+            success: allOptions.success,
+            message: allOptions.message,
+            errorType: allOptions.errorType,
+            data: allOptions.data,
+            ...allOptions.appendData,
+        });
+        return;
+    }
     static handleNotFound = (res: Response, options?: Partial<typeof this.Options.handleNotFound>) => {
         const allOptions = {
             ...this.Options.handleNotFound,
