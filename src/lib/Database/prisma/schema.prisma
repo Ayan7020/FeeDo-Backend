@@ -44,8 +44,7 @@ model BusinessProfile {
 
   businessName     String
   businessType     BusinessType
-  customerType     CustomerType
-  feedbackChannels FeedbackChannel[]
+  customerType     CustomerType 
   targetRegions    String[]
   Description      String
   analysisGoals    String?
@@ -72,13 +71,4 @@ enum CustomerType {
   B2B
   B2C
   Hybrid
-}
-
-enum FeedbackChannel {
-  Email
-  Chat
-  SupportTicket
-  Survey
-  AppReview
-  SocialMedia
 }
